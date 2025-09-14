@@ -156,6 +156,7 @@ impl XY {
                     let nby = theta_n.sin();
                     d_e += sx * nbx + sy * nby; // old
                     d_e -= sx_ref * nbx + sy_ref * nby; // new
+                    d_e -= self.h * (sx_ref - sx);
                 }
 
                 if d_e <= 0.0 || self.rng.gen_range(0.0..1.0) < (-d_e / self.temp).exp() {
