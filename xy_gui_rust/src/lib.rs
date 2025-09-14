@@ -109,6 +109,28 @@ impl XY {
         }
     }
 
+    pub fn overrelaxation_step(&mut self) {
+        for i in 0..self.n {
+            for j in 0..self.n {
+                let idx = i * self.n + j;
+                let neighbors = get_neighbors(&self.spins, i, j, self.n);
+                let mut hx = 0.0;
+                let mut hy = 0.0;
+                for &theta_n in &neighbors {
+                    hx += theta_n.cos();
+                    hy += theta_n.sin();
+                }
+                let theta_local = hy.atan2(hx);
+                self.spins[idx] = (2.0 * theta_local - self.spins[idx]) % (2.0 * std::f64::consts::PI);
+            }
+        }
+        // Recompute magnetization after overrelaxation
+        let (mx, my, m) = calc_avg_magnetization(&self.spins, self.n);
+        self.mx = mx;
+        self.my = my;
+        self.magnetization = m;
+    }
+
     // Get accepted spins
     #[wasm_bindgen(getter)]
     pub fn accepted(&self) -> f64 {

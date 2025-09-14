@@ -4,6 +4,7 @@ export const memory: WebAssembly.Memory;
 export const __wbg_xy_free: (a: number, b: number) => void;
 export const xy_new: (a: number, b: number, c: number, d: number) => number;
 export const xy_metropolis_step: (a: number) => void;
+export const xy_overrelaxation_step: (a: number) => void;
 export const xy_accepted: (a: number) => number;
 export const xy_attempted: (a: number) => number;
 export const xy_energy: (a: number) => number;

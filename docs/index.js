@@ -346,6 +346,8 @@ function render() {
                         xy.glauber_step();
                     } else if (algorithm === "kawasaki") {
                         xy.kawasaki_step();
+                    } else if (algorithm === "overrelaxation") {
+                        xy.overrelaxation_step();
                     }
                 }
                 sweepsThisFrame += batch;
@@ -370,6 +372,8 @@ function render() {
                         xy.glauber_step();
                     } else if (algorithm === "kawasaki") {
                         xy.kawasaki_step();
+                    } else if (algorithm === "overrelaxation") {
+                        xy.overrelaxation_step();
                     }
                 }
                 sweepsThisFrame += batch;
@@ -394,6 +398,8 @@ function render() {
                         xy.glauber_step();
                     } else if (algorithm === "kawasaki") {
                         xy.kawasaki_step();
+                    } else if (algorithm === "overrelaxation") {
+                        xy.overrelaxation_step();
                     }
                     // Store measurement values for binning
                     const idx = sweepState.tIndex;
@@ -469,6 +475,8 @@ function render() {
                 xy.glauber_step();
             } else if (algorithm === "kawasaki") {
                 xy.kawasaki_step();
+            } else if (algorithm === "overrelaxation") {
+                xy.overrelaxation_step();
             }
         }
         sweepsThisFrame += sweepsPerFrame;
