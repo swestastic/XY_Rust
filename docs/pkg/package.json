@@ -1,0 +1,15 @@
+{
+  "name": "xy_gui_rust",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "xy_gui_rust_bg.wasm",
+    "xy_gui_rust.js",
+    "xy_gui_rust.d.ts"
+  ],
+  "main": "xy_gui_rust.js",
+  "types": "xy_gui_rust.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
