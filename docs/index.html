@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>XY Model Simulation</title>
+    <style>
+      body { background: #222; min-height: 100vh; margin: 0; }
+      .main-content { display: flex; flex-direction: column; align-items: center; margin-top: 32px; }
+      canvas { image-rendering: pixelated; border: 2px solid white; width: 400px; height: 400px; }
+    </style>
+  </head>
+  <body>
+    <div class="main-content" style="display: flex; flex-direction: column; align-items: center; width: 100vw;">
+      <div class="controls-panel" style="background: #222a; border-radius: 16px; padding: 24px 32px; margin-bottom: 24px; box-shadow: 0 2px 8px #000; max-width: 900px; width: 100%; margin-left: auto; margin-right: auto;">
+      <h2 style="color: #fff; font-size: 1.3em; margin-bottom: 16px;">Simulation Controls</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: center; margin-bottom: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 180px;">
+          <label style="color: white;">Temperature
+            <input type="number" id="temp-value" min="0.1" max="5.0" step="0.01" value="0.86" style="width: 80px; margin-left: 8px; font-size: 1.1em;">
+          </label>
+          <input type="range" id="temp-slider" min="0.1" max="5.0" step="0.01" value="0.86" style="width: 100%;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 180px;">
+          <label style="color: white;">Coupling J
+            <input type="number" id="j-value" min="-2.0" max="2.0" step="0.01" value="1.0" style="width: 80px; margin-left: 8px; font-size: 1.1em;">
+          </label>
+          <input type="range" id="j-slider" min="-2.0" max="2.0" step="0.01" value="1.0" style="width: 100%;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 180px;">
+          <label style="color: white;">External Field h
+            <input type="number" id="h-value" min="-2.0" max="2.0" step="0.01" value="0.0" style="width: 80px; margin-left: 8px; font-size: 1.1em;">
+          </label>
+          <input type="range" id="h-slider" min="-2.0" max="2.0" step="0.01" value="0.0" style="width: 100%;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 180px;">
+          <label style="color: white;">Lattice Size
+            <select id="lattice-size" style="margin-left: 8px; font-size: 1.1em;">
+              <option value="8">8x8</option>
+              <option value="16">16x16</option>
+              <option value="32">32x32</option>
+              <option value="64" selected>64x64</option>
+              <option value="128">128x128</option>
+              <option value="256">256x256</option>
+              <option value="512">512x512</option>
+            </select>
+          </label>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 180px;">
+          <label style="color: white;">Algorithm
+            <select id="algorithm" style="margin-left: 8px; font-size: 1.1em;">
+              <option value="metropolis" selected>Metropolis</option>
+              <!-- <option value="wolff">Wolff</option> -->
+              <!-- <option value="swendsen-wang">Swendsen-Wang (BROKEN) </option> -->
+              <!-- <option value="heat-bath">Heat Bath</option> -->
+              <!-- <option value="glauber">Glauber</option> -->
+              <!-- <option value="kawasaki">Kawasaki</option> -->
+            </select>
+          </label>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: center; margin-bottom: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 180px;">
+          <label style="color: white;">Sweeps per frame</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="range" id="skip-slider" min="1" max="100" step="1" value="1" style="width: 100%;">
+            <input type="number" id="skip-input" min="1" max="100" step="1" value="1" style="width: 60px; margin-left: 8px; font-size: 1.1em;">
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: row; gap: 12px; align-items: center; margin-top: 8px;">
+          <button id="reset-btn" style="padding: 8px 20px; font-size: 1.1em; border-radius: 8px; margin-right: 8px;">Reset</button>
+          <button id="reset-data-btn" style="padding: 8px 20px; font-size: 1.1em; border-radius: 8px;">Reset Data</button>
+        </div>
+      </div>
+    </div>
+  <div class="sweep-panel" style="background: #222a; border-radius: 16px; padding: 24px 32px; margin-bottom: 24px; box-shadow: 0 2px 8px #000; max-width: 900px; width: 100%; margin-left: auto; margin-right: auto;">
+      <h2 style="color: #fff; font-size: 1.3em; margin-bottom: 16px;">Sweep Controls</h2>
+      <div id="sweep-controls" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: center;">
+        <label style="color: white;">T<sub>init</sub>: <input type="number" id="sweep-t-init" min="0.1" max="5.0" step="0.01" value="2.5" style="width: 80px; font-size: 1.1em;"></label>
+        <label style="color: white;">T<sub>final</sub>: <input type="number" id="sweep-t-final" min="0.1" max="5.0" step="0.01" value="1.5" style="width: 80px; font-size: 1.1em;"></label>
+        <label style="color: white;">ΔT: <input type="number" id="sweep-t-step" min="0.01" max="1.0" step="0.01" value="-0.1" style="width: 80px; font-size: 1.1em;"></label>
+        <label style="color: white;">Measurement sweeps: <input type="number" id="sweep-n-sweeps" min="1" max="10000" step="1" value="1000" style="width: 90px; font-size: 1.1em;"></label>
+        <label style="color: white;">Warmup sweeps: <input type="number" id="sweep-n-warmup" min="0" max="10000" step="1" value="1000" style="width: 90px; font-size: 1.1em;"></label>
+        <label style="color: white;">Decorrelation sweeps: <input type="number" id="sweep-n-decor" min="0" max="10000" step="1" value="5" style="width: 90px; font-size: 1.1em;"></label>
+  <button id="run-sweep-btn" style="padding: 8px 20px; font-size: 1.1em; border-radius: 8px;">Run T Sweep</button>
+  <button id="download-csv-btn" style="padding: 8px 20px; font-size: 1.1em; border-radius: 8px; background: #444; color: #ccc; cursor: not-allowed;" disabled>Download CSV</button>
+      </div>
+    </div>
+  <div style="display: flex; flex-direction: row; align-items: flex-start; gap: 32px; margin-top: 24px; justify-content: center; width: 100%;">
+      <canvas id="canvas" style="border-radius: 12px; box-shadow: 0 2px 8px #000;"></canvas>
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <canvas id="live-plot" width="400" height="400" style="width: 400px; height: 400px; background: #111; border: 2px solid white; border-radius: 12px; box-shadow: 0 2px 8px #000;"></canvas>
+        <div style="display: flex; flex-direction: column; align-items: center; margin-top: 12px;">
+          <label id="plot-label" style="color: white; margin-bottom: 8px; font-size: 1.1em;">
+            Plot:
+            <select id="plot-type" style="margin-left: 8px; font-size: 1.1em;">
+              <option value="energy" selected>Energy per Site</option>
+              <option value="magnetization">Magnetization per Site</option>
+              <option value="acceptance_ratio">Acceptance Ratio</option>
+              <option value="no_plot">None (Disable Plot)</option>
+            </select>
+          </label>
+          <span style="color: white; font-family: 'Courier New', monospace; font-size: 1.1em;">E = <span id="energy-value">0.0000</span> &nbsp; M = <span id="magnetization-value">+0.0000</span></span>
+          <span style="color: white; margin-top: 4px; font-size: 1.1em;">Acceptance Ratio: <span id="acceptance-ratio">0</span></span>
+          <span style="color: white; margin-top: 4px; font-size: 1.1em;">Sweeps/sec: <span id="sweeps-per-sec">0</span></span>
+        </div>
+      </div>
+    </div>
+      </div>
+      <script type="module" src="./index.js"></script>
+    </div> <!-- closes main-content div -->
+
+  <!-- Bottom Section: About, TODO, Completed -->
+  <div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 32px; width: 100vw; max-width: 1200px; margin: 48px auto 24px auto;">
+    <div style="flex: 2; min-width: 300px; display: flex; flex-direction: column;">
+      <div id="simulation-description" style="background: rgba(34,34,34,0.95); color: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px #000; margin-bottom: 24px;">
+        <h2 style="margin-top: 0;">About the Simulation</h2>
+        <div style="min-height: 40px; font-size: 1.1em; padding: 0; background: none; border: none;">
+          <p>This simulation is written in Rust and compiled to WebAssembly (WASM) for performance. 
+          It implements the 2D XY model with periodic boundaries using the Metropolis-Hastings algorithm.
+          The website is written in plain HTML, CSS, and JavaScript.
+          </p>
+
+
+          <ul style="list-style-type: disc; margin: 0; padding-left: 20px;">
+            <li>T slider adjusts temperature of the simulation. Default value is the critical Temperature - approximately 0.866 J/k (k=1 for this simulation)</li>
+            <li>J slider adjusts the coupling constant between spins. The default value is 1.0.
+                Positive J favors alignment (ferromagnetic) while negative J favors anti-alignment (antiferromagnetic).
+            </li>
+            <li>h slider adjusts the external magnetic field applied to the system. The default value is 0.0.
+                Positive h favors upwards spins while negative h favors downwards spins.
+            </li>
+            <li>The sweeps per frame slider allows users to control how many Monte Carlo sweeps are performed between each frame update, affecting the speed of the simulation.
+                The simulation speed is tied to the screen refresh rate, so it will be capped on monitors with lower refresh rates (typically 60Hz, 120Hz, or 144Hz).
+                Making this value larger will speed up the simulation significantly since it will not have to render as often, but visually it will be less smooth, especially for larger lattices.
+            </li>
+            <li>Lattice size dropdown chooses size adjustment from 8x8 to 512x512</li>
+            <li>Plot dropdown chooses which quantity to plot over time: energy per site, magnetization per site, acceptance ratio, or disable the plot entirely.</li>
+            <li>Reset button reinitializes the lattice with random spins and resets the simulation statistics.</li>
+          </ul>
+          </p>
+        </div>
+      </div>
+      <div id="model-description" style="background: rgba(34,34,34,0.95); color: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px #000;">
+        <h2 style="margin-top: 0;">About the XY Model</h2>
+        <div style="min-height: 40px; font-size: 1.1em; padding: 0; background: none; border: none;">
+          The XY model is an extension of the classical Ising model.
+          Instead of spins being restricted to +1 or -1 (up or down), 
+          in the XY model each spin can point in any direction in the 2D plane, represented by an angle θ from 0 to 2π.
+        </div>
+      </div>
+    </div>
+    <div style="flex: 1; min-width: 220px;">
+      <div style="background: rgba(34,34,34,0.9); color: white; padding: 16px; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 2px 8px #000;">
+        <h3 style="margin-top: 0; margin-bottom: 8px;">TODO List</h3>
+        <ul style="list-style-type: disc; margin: 0; padding-left: 20px;">
+          <li>Implement Swendsen-Wang algorithm</li>
+          <li>Add export/save functionality for plots and data</li>
+          <li>Documentation/information about algorithms</li>
+          <li>Improve UI/UX design</li>
+          <li>Optimize performance for larger lattices</li>
+          <li>Add more plot options (e.g. specific heat, susceptibility)</li>
+          <li>Code cleanup and comments</li>
+          <li>Live readout for average cluster size</li>
+          <li>Better axes and higher resolution for plots</li>
+          <li>Average energy and magnetization, &lt;E&gt; and &lt;M&gt; live readouts</li>
+          <li>Update E and M based on local changes (Wolff, HeatBath)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  </body>
+</html>
