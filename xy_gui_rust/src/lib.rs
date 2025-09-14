@@ -114,7 +114,7 @@ impl XY {
             for j in 0..self.n {
                 let idx = i * self.n + j;
                 let neighbors = get_neighbors(&self.spins, i, j, self.n);
-                let mut hx = 0.0;
+                let mut hx = self.h;
                 let mut hy = 0.0;
                 for &theta_n in &neighbors {
                     hx += theta_n.cos();
