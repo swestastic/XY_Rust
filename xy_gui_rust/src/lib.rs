@@ -131,6 +131,48 @@ impl XY {
         self.magnetization = m;
     }
 
+    pub fn metropolis_reflection_step(&mut self) {
+        let phi = self.rng.gen_range(0.0..(2.0 * std::f64::consts::PI));
+        let ux = phi.cos();
+        let uy = phi.sin();
+        for i in 0..self.n {
+            for j in 0..self.n {
+                let idx = i * self.n + j;
+
+                let theta = self.spins[idx];
+                let sx = theta.cos();
+                let sy = theta.sin();
+                
+                let dot = sx * ux + sy * uy;
+                let sx_ref = sx - 2.0 * dot * ux;
+                let sy_ref = sy - 2.0 * dot * uy;
+                let theta_ref = sy_ref.atan2(sx_ref) % (2.0 * std::f64::consts::PI);
+
+                let mut d_e = 0.0;
+                
+                let neighbors = get_neighbors(&self.spins, i, j, self.n);
+                for &theta_n in &neighbors {
+                    let nbx = theta_n.cos();
+                    let nby = theta_n.sin();
+                    d_e += sx * nbx + sy * nby; // old
+                    d_e -= sx_ref * nbx + sy_ref * nby; // new
+                }
+
+                if d_e <= 0.0 || self.rng.gen_range(0.0..1.0) < (-d_e / self.temp).exp() {
+                    self.spins[idx] = theta_ref;
+                    self.energy += d_e / (self.n * self.n) as f64;
+
+                    self.accepted += 1;
+                }
+            }
+        }
+        // Recompute magnetization after reflection
+        let (mx, my, m) = calc_avg_magnetization(&self.spins, self.n);
+        self.mx = mx;
+        self.my = my;
+        self.magnetization = m;
+    }
+
     // Get accepted spins
     #[wasm_bindgen(getter)]
     pub fn accepted(&self) -> f64 {

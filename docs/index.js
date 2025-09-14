@@ -348,6 +348,8 @@ function render() {
                         xy.kawasaki_step();
                     } else if (algorithm === "overrelaxation") {
                         xy.overrelaxation_step();
+                    } else if (algorithm === "metropolis-reflection") {
+                        xy.metropolis_reflection_step();
                     }
                 }
                 sweepsThisFrame += batch;
@@ -374,6 +376,8 @@ function render() {
                         xy.kawasaki_step();
                     } else if (algorithm === "overrelaxation") {
                         xy.overrelaxation_step();
+                    } else if (algorithm === "metropolis-reflection") {
+                        xy.metropolis_reflection_step();
                     }
                 }
                 sweepsThisFrame += batch;
@@ -400,6 +404,8 @@ function render() {
                         xy.kawasaki_step();
                     } else if (algorithm === "overrelaxation") {
                         xy.overrelaxation_step();
+                    } else if (algorithm === "metropolis-reflection") {
+                        xy.metropolis_reflection_step();
                     }
                     // Store measurement values for binning
                     const idx = sweepState.tIndex;
@@ -477,6 +483,8 @@ function render() {
                 xy.kawasaki_step();
             } else if (algorithm === "overrelaxation") {
                 xy.overrelaxation_step();
+            } else if (algorithm === "metropolis-reflection") {
+                        xy.metropolis_reflection_step();
             }
         }
         sweepsThisFrame += sweepsPerFrame;

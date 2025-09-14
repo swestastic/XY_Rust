@@ -5,6 +5,7 @@ export class XY {
   constructor(n: number, temp: number, j: number, h: number);
   metropolis_step(): void;
   overrelaxation_step(): void;
+  metropolis_reflection_step(): void;
   set_temp(temp: number): void;
   set_j(j: number): void;
   set_h(h: number): void;
@@ -24,6 +25,7 @@ export interface InitOutput {
   readonly xy_new: (a: number, b: number, c: number, d: number) => number;
   readonly xy_metropolis_step: (a: number) => void;
   readonly xy_overrelaxation_step: (a: number) => void;
+  readonly xy_metropolis_reflection_step: (a: number) => void;
   readonly xy_accepted: (a: number) => number;
   readonly xy_attempted: (a: number) => number;
   readonly xy_energy: (a: number) => number;

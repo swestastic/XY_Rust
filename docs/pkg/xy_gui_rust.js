@@ -84,6 +84,9 @@ export class XY {
     overrelaxation_step() {
         wasm.xy_overrelaxation_step(this.__wbg_ptr);
     }
+    metropolis_reflection_step() {
+        wasm.xy_metropolis_reflection_step(this.__wbg_ptr);
+    }
     /**
      * @returns {number}
      */
