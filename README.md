@@ -1,27 +1,22 @@
-# Ising Model Webapp
+# XY Model Webapp
 
-An interactive Ising Model app written in Rust. Intended to be a web-friendly version of my other project [Ising_GUI](https://github.com/swestastic/Ising_GUI/).
+An interactive XY Model app written in Rust. Intended to be a web-friendly version of my other project [XY_GUI](https://github.com/swestastic/XY_GUI/). The Rust code is compiled to Web Assembly, and the website is written in HTML/CSS/JavaScript. Most of the website code is borrowed from my other project, [Ising_Rust](https://github.com/swestastic/Ising_Rust/).
 
 ## Background
 
-The Ising model is a simple spin model, where each site on a lattice can take on a single value (-1,+1). It is described by the following Hamiltonian:
+The XY model, also called the O(2) model is a generalization of the Ising model, where spins can now take on a value of $[0, 2\pi)$ instead of Ising's discrete $\pm$ 1. It is described by the following Hamiltonian
 
 ```math
-H = -J \sum_i\sigma_i\sigma_j + h\sum_i\sigma_i
+H = -J \sum_{\langle i, j \rangle} \cos(\theta_i - \theta_j) - h \sum_i \cos(\theta_i)
 ```
 
-where $J$ is the interaction strength between neighboring sites, $\sigma_i=\pm1$ is the value at site $i$, and $h$ is an external magnetic field applied parallel do the spin axis.
+where $J$ is the interaction strength between neighboring sites, $\sigma_i=\pm1$ is the value at site $i$, and $h$ is an external magnetic field along $\hat{x}$.
 
-In two dimensions with no external magnetic field ($h=0$), the model exhibits a phase transition at $T_c = \frac{2J}{k \text{ln}(1+\sqrt{2}}) \approx (2.269185...)\frac{J}{k}$ where $k$ is the Boltzmann constant, which is commonly set to $k=1$. For $J>0$, the model is ferromagnetic, and below $T_c$ will converge to a fully-aligned state. For $J<0$, the model is anti-ferromagnetic and will instead converge to a fully anti-aligned state.
-
-Currently, this app supports the Metropolis-Hastings and Wolff algorithms.
-
-The Metropolis-Hastings algorithm is where "flips" are proposed to random sites on the lattice. A "flip" will invert the value on a given site $\sigma_i=\pm1\rightarrow\mp1$.
-A flip will either be accepted or rejected based on a Boltzmann probability, $r<e^{-\Delta E/T}$, where $r$ is a random number drawn on $(0,1)$. Decreases in energy are always accepted, and increases in energy have a chance to be accepted.
+In two dimensions with no external magnetic field ($h=0$), the model exhibits a phase transition at $T_c \approx (0.872...)\frac{J}{k}$ where $k$ is the Boltzmann constant, which is commonly set to $k=1$ (Note that calculations of this critical temperature vary from around 0.86 to 0.89). Around the critical temperature, this model exhibits the BKT phase transition which displays pairs of opposing vortices which become unpaired above $T_c$.
 
 ## Usage
 
-To use the webapp hosted on GitHub, just use this link [Ising Model Webapp](https://swestastic.github.io/Ising_Rust/)
+To use the webapp hosted on GitHub, just use this link [XY Model Webapp](https://swestastic.github.io/XY_Rust/)
 
 To run locally on your machine:
 
@@ -31,13 +26,9 @@ To run locally on your machine:
 
 If you are making edits to the code and need to recompile the webapp (This is necessary any time you make edits to `lib.rs`):
 
-- Open your terminal in the folder `ising_gui_rust`
+- Open your terminal in the folder `xy_gui_rust`
 - Run `wasm-pack build --target web --out-dir ../docs/pkg`
 
 ## Future Work
 
-- There is a lot of work left to do on this project. There is currently a TODO list open on the deployed site.
-
-## Acknowledgements
-
-This work was inspired by [mattbierbaum's ising.js](https://github.com/mattbierbaum/ising.js/). When I was first learning about the Ising model, I thought that it was a very helpful tool for visualizing the behavior of the model. I wanted to take my own attempt at it because of that!
+There is a lot of work left to do on this project. There is currently a TODO list open on the deployed site.
