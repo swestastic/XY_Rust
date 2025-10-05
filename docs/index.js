@@ -149,6 +149,11 @@ async function run() {
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
+    // Colorbar setup
+    const colorbar = document.getElementById("colorbar");
+    const colorbarCtx = colorbar.getContext("2d");
+    drawColorbar(colorbar, colorbarCtx);
+
     // Energy plot setup
     plotLabel = document.getElementById("plot-label");
     plotTypeDropdown = document.getElementById("plot-type");
@@ -648,6 +653,55 @@ function render() {
     }
     // Always continue animation
     animationId = requestAnimationFrame(render);
+}
+
+// Draw colorbar showing the HSV color mapping for spin angles
+function drawColorbar(canvas, ctx) {
+    canvas.width = 360;
+    canvas.height = 20;
+    
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+    const buf32 = new Uint32Array(imageData.data.buffer);
+    
+    for (let x = 0; x < canvas.width; x++) {
+        // Map x position to angle [0, 2π]
+        const theta = (x / canvas.width) * 2 * Math.PI;
+        // Map angle to hue [0, 360)
+        const hue = (theta / (2 * Math.PI)) * 360;
+        // Full saturation and value
+        const rgb = hsvToRgb(hue, 1, 1);
+        // Pack into uint32: 0xffRRGGBB
+        const color = (0xff << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+        
+        // Fill the entire height for this x position
+        for (let y = 0; y < canvas.height; y++) {
+            buf32[y * canvas.width + x] = color;
+        }
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+}
+
+// HSV to RGB conversion helper (needed for colorbar)
+function hsvToRgb(h, s, v) {
+    let c = v * s;
+    let x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    let m = v - c;
+    let r, g, b;
+    if (h < 60) {
+        r = c; g = x; b = 0;
+    } else if (h < 120) {
+        r = x; g = c; b = 0;
+    } else if (h < 180) {
+        r = 0; g = c; b = x;
+    } else if (h < 240) {
+        r = 0; g = x; b = c;
+    } else if (h < 300) {
+        r = x; g = 0; b = c;
+    } else {
+        r = c; g = 0; b = x;
+    }
+    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
 }
 
 run();

@@ -264,7 +264,39 @@ canvas{
     margin-top:4px;
   }
 
+  .colorbar-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 16px;
+    width: 400px;
+  }
+
+  .colorbar-canvas{
+    width: 360px;
+    height: 20px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .colorbar-labels{
+    display: flex;
+    justify-content: space-between;
+    width: 360px;
+    font-size: 0.9em;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .colorbar-title{
+    font-size: 0.9em;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
   @media (max-width: 980px){
     .stage{ flex-direction:column; gap:20px; }
     .plot-canvas, .sim-canvas{ width:100%; max-width:420px; height:400px; }
+    .colorbar-container{ width:100%; max-width:420px; }
+    .colorbar-canvas, .colorbar-labels{ width:100%; max-width:380px; }
   }

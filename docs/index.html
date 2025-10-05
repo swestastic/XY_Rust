@@ -93,7 +93,20 @@
     </div>
   
     <div class="stage">
-      <canvas id="canvas" class="sim-canvas"></canvas>
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <canvas id="canvas" class="sim-canvas"></canvas>
+        <div class="colorbar-container">
+          <div class="colorbar-labels">
+            <span>0</span>
+            <span>π/2</span>
+            <span>π</span>
+            <span>3π/2</span>
+            <span>2π</span>
+          </div>
+          <canvas id="colorbar" class="colorbar-canvas"></canvas>
+          <div class="colorbar-title">Spin Angle</div>
+        </div>
+      </div>
       
       <div style="display: flex; flex-direction: column; align-items: center;">
         <canvas id="live-plot" width="400" height="400" class="plot-canvas"></canvas>
