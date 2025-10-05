@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XY Model Algorithms</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #222;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        
+        .back-link {
+            display: inline-block;
+            background: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #ffffff;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .back-link:hover {
+            background: #444;
+            transform: translateY(-2px);
+        }
+        
+        .algorithm-section {
+            background: #222a;
+            margin: 30px 0;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px #000;
+        }
+        
+        h2 {
+            color: #87CEEB;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+        
+        h3 {
+            color: #ADD8E6;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .formula {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            border-left: 4px solid #87CEEB;
+        }
+        
+        ul {
+            padding-left: 25px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .note {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #FFC107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← Back to Simulation</a>
+            <h1>XY Model Algorithms</h1>
+            <p>Detailed descriptions of the Monte Carlo algorithms implemented in this simulation</p>
+        </div>
+
+        <div class="algorithm-section">
+            <h2>Key Terms</h2>
+            <ul>
+                <li>J - Interaction strength between neighboring spins</li>
+                <li>h - External magnetic field strength (h > 0 favors +1 spins, h < 0 favors -1 spins)</li>
+                <li>T - Temperature of the system</li>
+                <li>s - Spin at site (i, j), either +1 or -1</li>
+                <li>s_up, s_down, s_left, s_right - Spins of the four nearest neighbors of (i, j)</li>
+                <li>ΔE - Change in energy if a spin is flipped</li>
+                <li>N² - Total number of spins in the system (e.g for N=64, the lattice is 64x64 with 4096 total sites)</li>
+            </ul>
+        </div>        
+
+        <div class="algorithm-section">
+            <h2>Metropolis Algorithm</h2>
+            <p>The Metropolis algorithm is a single-spin flip Monte Carlo method that follows the detailed balance condition. It's one of the most widely used algorithms for simulating the XY model.</p>
+            
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>Randomly select a spin site (i, j)</li>
+                <li>Calculate the energy change ΔE if the spin is flipped</li>
+                <li>Accept the flip with probability min(1, e^(-ΔE/T))</li>
+                <li>Repeat for N² sites per sweep</li>
+            </ul>
+            
+            <!-- <div class="formula">
+                ΔE = 2J·s·(s_up + s_down + s_left + s_right) + 2h·s
+                <br>P_accept = min(1, exp(-ΔE/T))
+            </div> -->
+            
+            <p>This algorithm efficiently samples the canonical ensemble and is particularly effective near equilibrium. The acceptance rate decreases at low temperatures but maintains detailed balance.</p>
+        </div>
+
+        <div class="algorithm-section">
+            <h2>Metropolis Reflection Algorithm</h2>
+            <p>The Metropolis Reflection algorithm is a single-spin flip Monte Carlo method that follows the detailed balance condition.</p>
+            
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>Randomly select a spin site (i, j)</li>
+                <li>Calculate the energy change ΔE if the spin is flipped</li>
+                <li>Accept the flip with probability min(1, e^(-ΔE/T))</li>
+                <li>Repeat for N² sites per sweep</li>
+            </ul>
+            
+            <!-- <div class="formula">
+                ΔE = 2J·s·(s_up + s_down + s_left + s_right) + 2h·s
+                <br>P_accept = min(1, exp(-ΔE/T))
+            </div> -->
+            
+            <p>This algorithm efficiently samples the canonical ensemble and is particularly effective near equilibrium. The acceptance rate decreases at low temperatures but maintains detailed balance.</p>
+        </div>
+
+        <!-- <div class="algorithm-section">
+            <h2>Glauber Dynamics</h2>
+            <p>The Glauber algorithm is very similar to Metropolis, but uses a different acceptance probability that naturally satisfies detailed balance without requiring the min(1, ...) condition.</p>
+            
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>Randomly select a spin site (i, j)</li>
+                <li>Calculate the energy change ΔE if the spin is flipped</li>
+                <li>Accept the flip with probability 1/(1+exp(ΔE/T))</li>
+            </ul>
+            
+            <div class="formula">
+                ΔE = 2J·s·(s_up + s_down + s_left + s_right) + 2h·s
+                <br>P_accept = 1/(1+exp(ΔE/T))
+            </div>
+        
+        </div> -->
+
+        <!-- <div class="algorithm-section">
+            <h2>Heat Bath Algorithm</h2>
+            <p>The Heat Bath algorithm works by calculating the local field at site (i, j) from the nearest neighbors of each spin and the external field.
+                This differs from other methods because we do not calculate ΔE to determine if a spin is flipped,
+                rather we calculate the probability of it being +1 or -1 based on the local field.</p>
+            
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>Randomly select a spin site (i, j)</li>
+                <li>Calculate the local field at (i, j)</li>
+                <li>Set s = +1 with probability P(s = +1)</li>
+                <li>If the probability check fails, set s = -1</li>
+            </ul>
+            
+            <div class="formula">
+                local_field = J·(s_up + s_down + s_left + s_right) + h
+                <br>P(s = +1) = 1 / (1 + exp(-2 * local_field / T))
+            </div>
+        </div> -->
+
+        <!-- <div class="algorithm-section">
+            <h2>Wolff Cluster Algorithm</h2>
+            <p>The Wolff algorithm is a single cluster update method that can dramatically reduce critical slowing down near phase transitions. It constructs and flips an entire cluster of aligned spins.
+                This algorithm is rejection-free, meaning that once a cluster is formed, it is always flipped. 
+            </p>
+            
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>If J&lt;0.0, perform a checkerboard gauge transformation</li>
+                <li>Randomly select a spin site (i, j)</li>
+                <li>Check if the site will be coupled to the ghost spin with probability P = 1 - exp(-2|h|/T)</li>
+                <li>Add aligned neighboring sites to the cluster with probability P = 1 - exp(-2|J|/T)</li>
+                <li>Set (i, j) to the coordinates of a neighbor that was added to the cluster</li>
+                <li>Repeat steps 3-5 until every site in the cluster has been checked, and the cluster stops growing. Each bond should be checked once.</li>
+                <li>If any of the sites in the cluster were coupled to the ghost spin, set all sites in the cluster to align with it.</li>
+                <li>If no sites in the cluster were coupled to the ghost spin, flip all sites in the cluster.</li>
+                <li>If J&lt;0, undo the checkerboard gauge transformation.</li>
+            </ul>
+
+            <div class="formula">
+                P_add = 1 - exp(-2|J|/T)  (add a site to the cluster)
+                <br>P_ghost = 1 - exp(-2|h|/T)  (couple a site to the ghost spin)
+                <br>ghost_spin = 1 if h>=0 else -1
+            </div>
+            <div class="note">
+                <strong>Note for Antiferromagnetism:</strong> This algorithm does not work out of the box for antiferromagnetic interactions (J&lt;0).
+                In order to handle this, we perform a gauge transformation by flipping one color of the checkerboard lattice before applying the Wolff algorithm.
+                This effectively converts the antiferromagnetic problem into a ferromagnetic one, allowing the cluster algorithm to function correctly.
+                At the end of every sweep, we flip the sublattice back to restore the original configuration. <a href="checkerboard.html" style="color: #87CEEB;">Learn more about checkerboard transformations here</a>.
+            </div>
+            <div class="note">
+                <strong>Note for External Field:</strong> In order to include the effect of an external magnetic field, we introduce a "ghost" spin that interacts with all spins in the lattice.
+                Learn more about that here: <a href="https://arxiv.org/abs/1805.04019" style="color: #87CEEB;">Cluster representations and the Wolff algorithm in arbitrary external fields - Jaron Kent-Dobias, James P Sethna</a>
+            </div>
+        </div> -->
+
+        <!-- <div class="algorithm-section">
+            <h2>Swendsen-Wang Algorithm</h2>
+            <p>The Swendsen-Wang algorithm is another cluster algorithm that can efficiently update clusters of spins in a single move. 
+                The key difference between the Swendsen-Wang and Wolff algorithms is that Wolff only creates a single cluster which is always flipped with 100% certainty. 
+                Swendsen-Wang instead creates multiple clusters such that every site in the lattice is part of exactly one cluster, and then each cluster is flipped independently with a probability check.
+                This means that for a lattice of N² sites, we can create anywhere from 1 to N² clusters, and none of them are guaranteed to be flipped.
+            </p>
+            
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>Coming soon!</li>
+                <li>Identify all clusters of aligned spins using the same bonding probability as Wolff</li>
+                <li>Each cluster is flipped independently with probability 1/2</li>
+                <li>External field coupling can force clusters to align</li>
+                <li>All clusters are updated simultaneously</li>
+            </ul>
+            
+            <div class="formula">
+                Coming soon!
+                All clusters found with P_add = 1 - exp(-2|J|/T)
+                <br>Each cluster flipped with P_flip = 1/2 (or forced by external field)
+            </div>
+
+            <div class="note">
+                <strong>Note for Antiferromagnetism:</strong> This algorithm does not work out of the box for antiferromagnetic interactions (J&lt;0).
+                In order to handle this, we perform a gauge transformation by flipping one color of the checkerboard lattice before applying the Wolff algorithm.
+                This effectively converts the antiferromagnetic problem into a ferromagnetic one, allowing the cluster algorithm to function correctly.
+                At the end of every sweep, we flip the sublattice back to restore the original configuration. <a href="checkerboard.html" style="color: #87CEEB;">Learn more about checkerboard transformations here</a>.
+            </div>
+           <div class="note">
+                <strong>Note for External Field:</strong> In order to include the effect of an external magnetic field, we introduce a "ghost" spin that interacts with all spins in the lattice.
+                Learn more about that here: <a href="https://arxiv.org/abs/1805.04019" style="color: #87CEEB;">Cluster representations and the Wolff algorithm in arbitrary external fields - Jaron Kent-Dobias, James P Sethna</a>
+            </div>
+            
+        </div> -->
+
+        <!-- <div class="algorithm-section">
+            <h2>Kawasaki Dynamics</h2>
+            <p>The Kawasaki algorithm conserves the total magnetization by exchanging spins between neighboring sites rather than flipping individual spins. This is useful for studying systems with conserved quantities.</p>
+            
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>Randomly select a spin site and one of its nearest neighbors</li>
+                <li>Calculate the energy change for swapping these spins</li>
+                <li>Accept the swap with Metropolis probability</li>
+                <li>This conserves total magnetization while allowing local rearrangements</li>
+            </ul>
+            
+            <div class="formula">
+                ΔE = E_after - E_before 
+                <br>P_accept = min(1, exp(-ΔE/T))
+            </div>
+            
+            <div class="note">
+                <strong>Note for ΔE Calculation:</strong> Normally when a site is flipped, 4 bonds are affected. In Kawasaki dynamics, since we exchange two spins, 6 bonds are affected (3 for each spin, 
+                the bond connecting the two sites is left unchanged). 
+                This must be accounted for in the ΔE calculation.
+            </div>
+        </div> -->
+
+        <!-- <div class="algorithm-section">
+            <h2>Comparison and Usage Guidelines</h2>
+            
+            <h3>Performance Characteristics:</h3>
+            <ul>
+                <li><span class="highlight">Metropolis/Glauber/Heat Bath:</span> Good general-purpose algorithms, suffer from critical slowing down</li>
+                <li><span class="highlight">Kawasaki:</span> Essential for conserved magnetization studies, slower convergence</li>
+                <li><span class="highlight">Wolff/Swendsen-Wang:</span> Excellent near critical points, reduced critical slowing down</li>
+            </ul>
+            
+            <h3>When to Use Each Algorithm:</h3>
+            <ul>
+                <li><strong>High Temperature:</strong> All algorithms perform similarly; Metropolis is often sufficient</li>
+                <li><strong>Near Critical Temperature:</strong> Cluster algorithms (Wolff/SW) are strongly recommended</li>
+                <li><strong>Low Temperature:</strong> Cluster algorithms help overcome energy barriers</li>
+                <li><strong>Conserved Quantities:</strong> Use Kawasaki for magnetization conservation</li>
+                <li><strong>Dynamic Studies:</strong> Glauber provides natural connection to physical time scales</li>
+            </ul>
+            
+            <div class="note">
+                <strong>Tip:</strong> In the simulation, you can switch between algorithms to see how they behave differently, especially near the critical temperature T_c ≈ 2.269 for the 2D Ising model.
+            </div>
+        </div> -->
+    </div>
+</body>
+</html>
