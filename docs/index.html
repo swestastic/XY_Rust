@@ -18,9 +18,9 @@
       <div class="controls-row">
         <div class="field-col">
           <label class="label">Temperature
-            <input type="number" id="temp-value" min="0.1" max="5.0" step="0.01" value="2.27" class="num">
+            <input type="number" id="temp-value" min="0.1" max="5.0" step="0.01" value="0.87" class="num">
           </label>
-          <input type="range" id="temp-slider" min="0.1" max="5.0" step="0.01" value="2.27" class="range">
+          <input type="range" id="temp-slider" min="0.1" max="5.0" step="0.01" value="0.87" class="range">
         </div>
         
         <div class="field-col">
@@ -74,6 +74,7 @@
         <div class="row row-buttons">
           <button id="reset-btn" class="btn">Reset</button>
           <button id="reset-data-btn" class="btn">Reset Data</button>
+          <button id="toggle-viz-btn" class="btn btn-toggle">Switch to Quiver View</button>
         </div>
       </div>
     </div>
@@ -95,7 +96,7 @@
     <div class="stage">
       <div style="display: flex; flex-direction: column; align-items: center;">
         <canvas id="canvas" class="sim-canvas"></canvas>
-        <div class="colorbar-container">
+        <div id="colorbar-container" class="colorbar-container">
           <div class="colorbar-labels">
             <span>0</span>
             <span>π/2</span>
@@ -182,6 +183,7 @@
           <li>Live readout for average cluster size</li>
           <li>Better axes and higher resolution for plots</li>
           <li>Average energy and magnetization, &lt;E&gt; and &lt;M&gt; live readouts</li>
+          <li><s>Arrow/quiver visualization mode</s> ✓</li>
         </ul>
       </div>
     </div>

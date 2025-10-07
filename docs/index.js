@@ -27,6 +27,10 @@ let downloadCsvBtn = null;
 let sweepState = null;
 let sweepRunning = false;
 
+// Visualization mode: "color" or "quiver"
+let vizMode = "color";
+let colorbarContainer = null;
+
 async function run() {
     downloadCsvBtn = document.getElementById("download-csv-btn");
     downloadCsvBtn.disabled = true;
@@ -286,18 +290,53 @@ async function run() {
         render();
     });
 
+    // Toggle visualization mode button
+    colorbarContainer = document.getElementById("colorbar-container");
+    const toggleVizBtn = document.getElementById("toggle-viz-btn");
+    toggleVizBtn.addEventListener("click", () => {
+        if (vizMode === "color") {
+            vizMode = "quiver";
+            toggleVizBtn.textContent = "Switch to Color View";
+            // Increase canvas resolution for crisp arrows
+            canvas.width = 400;
+            canvas.height = 400;
+            canvas.style.imageRendering = "auto";
+        } else {
+            vizMode = "color";
+            toggleVizBtn.textContent = "Switch to Quiver View";
+            // Restore original canvas resolution
+            canvas.width = n;
+            canvas.height = n;
+            canvas.style.imageRendering = "pixelated";
+            imageData = ctx.createImageData(n, n);
+        }
+    });
+
     render();
 }
 
 function setupXY(size) {
     xy = new XY(size, temp, j, h);
-    canvas.width = size;
-    canvas.height = size;
+    
+    // Set canvas size based on current visualization mode
+    if (vizMode === "quiver") {
+        canvas.width = 400;
+        canvas.height = 400;
+    } else {
+        canvas.width = size;
+        canvas.height = size;
+    }
+    
     // Keep the canvas display size constant
     canvas.style.width = "400px";
     canvas.style.height = "400px";
     ctx = canvas.getContext("2d");
-    imageData = ctx.createImageData(size, size);
+    
+    // Only create imageData for color mode
+    if (vizMode === "color") {
+        imageData = ctx.createImageData(size, size);
+    }
+    
     // Create/reuse spins typed array (Float64Array for XY model)
     const ptr = xy.spins_ptr;
     spins = new Float64Array(wasm.memory.buffer, ptr, size * size);
@@ -517,19 +556,26 @@ function render() {
     if (!spins || spins.buffer !== wasm.memory.buffer || spins.byteOffset !== ptr || spins.length !== n * n) {
         spins = new Float64Array(wasm.memory.buffer, ptr, n * n);
     }
-    const buf32 = new Uint32Array(imageData.data.buffer);
-    // Map each spin angle to a color on the HSV wheel
-    for (let i = 0; i < spins.length; i++) {
-        // Angle in radians [0, 2pi]
-        const theta = spins[i];
-        // Map angle to hue [0, 360)
-        const hue = ((theta % (2 * Math.PI)) / (2 * Math.PI)) * 360;
-        // Full saturation and value
-        const rgb = hsvToRgb(hue, 1, 1);
-        // Pack into uint32: 0xffRRGGBB
-        buf32[i] = (0xff << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+
+    if (vizMode === "color") {
+        // Original color visualization
+        const buf32 = new Uint32Array(imageData.data.buffer);
+        // Map each spin angle to a color on the HSV wheel
+        for (let i = 0; i < spins.length; i++) {
+            // Angle in radians [0, 2pi]
+            const theta = spins[i];
+            // Map angle to hue [0, 360)
+            const hue = ((theta % (2 * Math.PI)) / (2 * Math.PI)) * 360;
+            // Full saturation and value
+            const rgb = hsvToRgb(hue, 1, 1);
+            // Pack into uint32: 0xffRRGGBB
+            buf32[i] = (0xff << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+        }
+        ctx.putImageData(imageData, 0, 0);
+    } else {
+        // Quiver/arrow visualization
+        drawQuiver();
     }
-    ctx.putImageData(imageData, 0, 0);
 
     // HSV to RGB conversion helper
     function hsvToRgb(h, s, v) {
@@ -653,6 +699,93 @@ function render() {
     }
     // Always continue animation
     animationId = requestAnimationFrame(render);
+}
+
+// Draw quiver plot (arrows) showing spin directions
+function drawQuiver() {
+    // Save current context state
+    ctx.save();
+    
+    // Clear canvas with dark background
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Determine arrow spacing based on lattice size
+    // For large lattices, we'll skip some sites to avoid clutter
+    let skip = 1;
+    if (n > 128) {
+        skip = 4;
+    } else if (n > 64) {
+        skip = 2;
+    }
+    
+    // Calculate grid for arrows (canvas is now 400x400 regardless of lattice size)
+    const gridSize = Math.ceil(n / skip);
+    const cellSize = 400 / gridSize;
+    const arrowLength = cellSize * 0.6; // Arrow length as fraction of cell size
+    const headLength = arrowLength * 0.3; // Arrow head length
+    
+    ctx.lineWidth = Math.max(1, cellSize / 20);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    
+    for (let i = 0; i < n; i += skip) {
+        for (let j = 0; j < n; j += skip) {
+            const idx = i * n + j;
+            const theta = spins[idx];
+            
+            // Map angle to color using HSV (same as color mode)
+            const hue = ((theta % (2 * Math.PI)) / (2 * Math.PI)) * 360;
+            const rgb = hsvToRgb(hue, 1, 1);
+            const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+            
+            // Set arrow color
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            
+            // Center position of arrow in canvas coordinates
+            const cx = (j / skip + 0.5) * cellSize;
+            const cy = (i / skip + 0.5) * cellSize;
+            
+            // Arrow direction components
+            const dx = Math.cos(theta);
+            const dy = Math.sin(theta);
+            
+            // Start and end points of arrow shaft
+            const x1 = cx - (dx * arrowLength) / 2;
+            const y1 = cy - (dy * arrowLength) / 2;
+            const x2 = cx + (dx * arrowLength) / 2;
+            const y2 = cy + (dy * arrowLength) / 2;
+            
+            // Draw arrow shaft
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // Draw arrow head
+            const angle = theta; // theta is already the angle
+            const headAngle = Math.PI / 6; // 30 degrees
+            
+            // Left side of arrow head
+            const leftX = x2 - headLength * Math.cos(angle - headAngle);
+            const leftY = y2 - headLength * Math.sin(angle - headAngle);
+            
+            // Right side of arrow head
+            const rightX = x2 - headLength * Math.cos(angle + headAngle);
+            const rightY = y2 - headLength * Math.sin(angle + headAngle);
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(leftX, leftY);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(rightX, rightY);
+            ctx.stroke();
+        }
+    }
+    
+    // Restore context state
+    ctx.restore();
 }
 
 // Draw colorbar showing the HSV color mapping for spin angles

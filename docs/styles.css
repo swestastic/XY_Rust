@@ -216,6 +216,13 @@ canvas{
   background:#444;
   color:#ccc;
 }
+.btn.btn-toggle{
+  background:#2a7;
+  color:#fff;
+}
+.btn.btn-toggle:hover{
+  background:#3b8;
+}
 
 .panel.sweep-panel{
   background: #222a; 
