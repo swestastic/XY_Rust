@@ -139,6 +139,15 @@ async function run() {
         h = parseFloat(hSlider.value);
         hValue.value = h.toFixed(2);
         xy.set_h(h);
+        
+        // Check if Wolff is selected and h is not zero
+        if (algorithm === "wolff" && h !== 0) {
+            alert("Wolff algorithm requires h = 0.\n\nResetting external field to 0.");
+            h = 0;
+            hValue.value = "0.00";
+            hSlider.value = "0";
+            xy.set_h(0);
+        }
     });
     hValue.addEventListener("change", () => {
         let val = parseFloat(hValue.value);
@@ -149,6 +158,15 @@ async function run() {
         h = val;
         hSlider.value = h;
         xy.set_h(h);
+        
+        // Check if Wolff is selected and h is not zero
+        if (algorithm === "wolff" && h !== 0) {
+            alert("Wolff algorithm requires h = 0.\n\nResetting external field to 0.");
+            h = 0;
+            hValue.value = "0.00";
+            hSlider.value = "0";
+            xy.set_h(0);
+        }
     });
     wasm = await init();
 
@@ -203,6 +221,15 @@ async function run() {
         j = parseFloat(jSlider.value);
         jValue.value = j.toFixed(2);
         xy.set_j(j);
+        
+        // Check if Wolff is selected and J is negative
+        if (algorithm === "wolff" && j < 0) {
+            alert("Wolff algorithm requires J ≥ 0.\n\nThe antiferromagnetic case is not currently implemented.\n\nResetting to J = 1.0");
+            j = 1.0;
+            jValue.value = "1.00";
+            jSlider.value = "1.0";
+            xy.set_j(1.0);
+        }
     });
 
     jValue.addEventListener("change", () => {
@@ -214,6 +241,15 @@ async function run() {
         j = val;
         jSlider.value = j;
         xy.set_j(j);
+        
+        // Check if Wolff is selected and J is negative
+        if (algorithm === "wolff" && j < 0) {
+            alert("Wolff algorithm requires J ≥ 0.\n\nThe antiferromagnetic case is not currently implemented.\n\nResetting to J = 1.0");
+            j = 1.0;
+            jValue.value = "1.00";
+            jSlider.value = "1.0";
+            xy.set_j(1.0);
+        }
     });
 
     // Dropdown for lattice size
@@ -231,6 +267,27 @@ async function run() {
     const algorithmDropdown = document.getElementById("algorithm");
     algorithmDropdown.addEventListener("change", () => {
         algorithm = algorithmDropdown.value;
+        
+        // Validate Wolff algorithm parameters
+        if (algorithm === "wolff") {
+            const jValue = parseFloat(document.getElementById("j-value").value);
+            const hValue = parseFloat(document.getElementById("h-value").value);
+            
+            if (jValue < 0 || hValue !== 0) {
+                alert("Wolff algorithm requires J ≥ 0 and h = 0.\n\nThe current implementation does not support antiferromagnetic coupling (J < 0) or external fields (h ≠ 0).\n\nResetting to J = 1.0 and h = 0.0");
+                
+                // Reset J to 1.0
+                document.getElementById("j-value").value = "1.0";
+                document.getElementById("j-slider").value = "1.0";
+                xy.set_j(1.0);
+                
+                // Reset h to 0.0
+                document.getElementById("h-value").value = "0.0";
+                document.getElementById("h-slider").value = "0.0";
+                xy.set_h(0.0);
+            }
+        }
+        
         if (animationId) {
             cancelAnimationFrame(animationId);
         }
@@ -549,8 +606,6 @@ function render() {
                         xy.heatbath_step();
                     } else if (algorithm === "glauber") {
                         xy.glauber_step();
-                    } else if (algorithm === "kawasaki") {
-                        xy.kawasaki_step();
                     } else if (algorithm === "overrelaxation") {
                         xy.overrelaxation_step();
                     } else if (algorithm === "metropolis-reflection") {

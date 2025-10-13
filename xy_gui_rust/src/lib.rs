@@ -75,7 +75,7 @@ impl XY {
         Self { n, spins, temp, j, h: 0.0, accepted: 0, attempted: 0, rng, energy: e, magnetization: m, mx, my }
     }
 
-    // Perform a single Metropolis-Hastings update
+    // Perform a Metropolis-Hastings update
     #[wasm_bindgen]
     pub fn metropolis_step(&mut self) {
         self.attempted += self.n * self.n; // Each step attempts n*n updates
@@ -108,7 +108,9 @@ impl XY {
             }
         }
     }
-
+    
+    // Perform an overrelaxation step
+    #[wasm_bindgen]
     pub fn overrelaxation_step(&mut self) {
         for i in 0..self.n {
             for j in 0..self.n {
@@ -131,6 +133,8 @@ impl XY {
         self.magnetization = m;
     }
 
+    // Perform a Metropolis reflection step
+    #[wasm_bindgen]
     pub fn metropolis_reflection_step(&mut self) {
         let phi = self.rng.gen_range(0.0..(2.0 * std::f64::consts::PI));
         let ux = phi.cos();
@@ -175,6 +179,86 @@ impl XY {
         }
 
         // Recompute magnetization after reflection
+        let (mx, my, m) = calc_avg_magnetization(&self.spins, self.n);
+        self.mx = mx;
+        self.my = my;
+        self.magnetization = m;
+    }
+
+    // Perform a Wolff update for XY model
+    #[wasm_bindgen]
+    pub fn wolff_step(&mut self) {
+        let n = self.n;
+        
+        // Generate a random angle phi between 0 and 2*pi (reflection axis)
+        let phi = self.rng.gen_range(0.0..(2.0 * std::f64::consts::PI));
+        let two_phi = 2.0 * phi; // Precompute 2*phi to save computation later
+        let pi = std::f64::consts::PI; // Precompute pi
+        
+        // Pick random seed site
+        let i0 = self.rng.gen_range(0..n);
+        let j0 = self.rng.gen_range(0..n);
+        let seed_idx = i0 * n + j0;
+        
+        // Use visited array to track both cluster membership and original angles
+        // Store original angle + 10.0 to distinguish from unvisited (initialized to 0.0)
+        let mut original_angles = vec![0.0; n * n];
+        let mut cluster_sites = Vec::new();
+        
+        // Add seed site to cluster
+        cluster_sites.push((i0, j0));
+        let original_seed = self.spins[seed_idx];
+        original_angles[seed_idx] = original_seed + 10.0; // Mark as visited
+        self.spins[seed_idx] = (pi - original_seed + two_phi).rem_euclid(2.0 * pi);
+        
+        // Precompute constant for probability calculation
+        let prob_factor = -2.0 * self.j / self.temp;
+        
+        // Process cluster (iterating through a growing vector)
+        let mut idx_in_cluster = 0;
+        while idx_in_cluster < cluster_sites.len() {
+            let (i, j) = cluster_sites[idx_in_cluster];
+            let site_idx = i * n + j;
+            let theta_i = original_angles[site_idx] - 10.0; // Recover original angle
+            let cos_phi_i = (phi - theta_i).cos();
+            
+            // Check all four neighbors
+            let neighbors = [
+                (i, (j + 1) % n),           // north
+                (i, (j + n - 1) % n),       // south
+                ((i + 1) % n, j),           // east
+                ((i + n - 1) % n, j),       // west
+            ];
+            
+            for (ni, nj) in neighbors {
+                let neighbor_idx = ni * n + nj;
+                
+                // Check if neighbor is already in cluster (visited)
+                if original_angles[neighbor_idx] == 0.0 {
+                    let theta_j = self.spins[neighbor_idx];
+                    
+                    // Calculate probability: p = 1 - exp(min(0, -2*J/T * cos(phi - theta_i) * cos(phi - theta_j)))
+                    let cos_phi_j = (phi - theta_j).cos();
+                    let exponent = (prob_factor * cos_phi_i * cos_phi_j).min(0.0);
+                    let prob = 1.0 - exponent.exp();
+                    
+                    if self.rng.gen_range(0.0..1.0) < prob {
+                        cluster_sites.push((ni, nj));
+                        // Mark as visited and flip
+                        original_angles[neighbor_idx] = theta_j + 10.0;
+                        self.spins[neighbor_idx] = (pi - theta_j + two_phi).rem_euclid(2.0 * pi);
+                    }
+                }
+            }
+            
+            idx_in_cluster += 1;
+        }
+        
+        self.attempted += 1;
+        self.accepted += 1;
+        
+        // Recompute energy and magnetization
+        self.energy = calc_avg_energy(&self.spins, self.n, self.j, self.h);
         let (mx, my, m) = calc_avg_magnetization(&self.spins, self.n);
         self.mx = mx;
         self.my = my;

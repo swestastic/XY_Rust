@@ -87,6 +87,9 @@ export class XY {
     metropolis_reflection_step() {
         wasm.xy_metropolis_reflection_step(this.__wbg_ptr);
     }
+    wolff_step() {
+        wasm.xy_wolff_step(this.__wbg_ptr);
+    }
     /**
      * @returns {number}
      */
