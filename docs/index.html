@@ -133,6 +133,14 @@
       <script type="module" src="./index.js"></script>
     </div> <!-- closes main-content div -->
 
+  <!-- Modal for expanded canvas view -->
+  <div id="canvas-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close expanded view">&times;</button>
+      <canvas id="modal-canvas" class="modal-canvas"></canvas>
+    </div>
+  </div>
+
   <!-- Bottom Section: About, TODO, Completed -->
   <div class="bottom container">
     <div class="about-col">

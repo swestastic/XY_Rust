@@ -301,6 +301,73 @@ canvas{
     margin-top: 4px;
   }
 
+  /* Modal overlay for expanded canvas view */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    z-index:1000;
+    justify-content:center;
+    align-items:center;
+    cursor:pointer;
+  }
+
+  .modal-overlay.active{
+    display:flex;
+  }
+
+  .modal-content{
+    position:relative;
+    max-width:90vw;
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+  }
+
+  .modal-canvas{
+    border:2px solid white;
+    border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.8);
+    max-width:90vw;
+    max-height:80vh;
+    object-fit:contain;
+  }
+
+  .modal-close{
+    position:absolute;
+    top:-40px;
+    right:0;
+    color:white;
+    font-size:2em;
+    font-weight:bold;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:8px 16px;
+    line-height:1;
+  }
+
+  .modal-close:hover{
+    color:var(--accent);
+  }
+
+  /* Make canvases appear clickable */
+  .sim-canvas, .plot-canvas{
+    cursor:pointer;
+    transition:transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .sim-canvas:hover, .plot-canvas:hover{
+    transform:scale(1.02);
+    box-shadow:0 4px 16px rgba(135,206,235,0.4);
+  }
+
   @media (max-width: 980px){
     .stage{ flex-direction:column; gap:20px; }
     .plot-canvas, .sim-canvas{ width:100%; max-width:420px; height:400px; }

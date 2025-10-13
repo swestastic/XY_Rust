@@ -15,6 +15,8 @@ let plotLabel, plotTypeDropdown, energyValue, magnetizationValue, acceptanceRati
 let plotHistory = [];
 const maxHistory = 400;
 let plotType = "energy";
+// Modal canvas references
+let canvasModal, modalCanvas, modalCtx, expandedCanvasType = null;
 // Top-level references for temperature controls
 let tempSlider = null;
 let runSweepBtn = null;
@@ -312,6 +314,74 @@ async function run() {
         }
     });
 
+    // Modal functionality for canvas expansion
+    canvasModal = document.getElementById("canvas-modal");
+    modalCanvas = document.getElementById("modal-canvas");
+    modalCtx = modalCanvas.getContext("2d");
+    const modalClose = canvasModal.querySelector(".modal-close");
+
+    function openModal(canvasType) {
+        expandedCanvasType = canvasType;
+        canvasModal.classList.add("active");
+        
+        // Set modal canvas size to be larger (80% of viewport)
+        const maxSize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.8);
+        
+        if (canvasType === "sim") {
+            // For simulation canvas, match current visualization mode
+            if (vizMode === "quiver") {
+                modalCanvas.width = 400;
+                modalCanvas.height = 400;
+                modalCanvas.style.imageRendering = "auto";
+            } else {
+                modalCanvas.width = n;
+                modalCanvas.height = n;
+                modalCanvas.style.imageRendering = "pixelated";
+            }
+            modalCanvas.style.width = maxSize + "px";
+            modalCanvas.style.height = maxSize + "px";
+            
+            // Copy current visualization
+            if (vizMode === "color" && imageData) {
+                modalCtx.putImageData(imageData, 0, 0);
+            } else if (vizMode === "quiver") {
+                // Redraw quiver on modal canvas
+                drawQuiverToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+            }
+        } else if (canvasType === "plot") {
+            // For plot canvas, use a larger resolution
+            modalCanvas.width = 800;
+            modalCanvas.height = 800;
+            modalCanvas.style.width = maxSize + "px";
+            modalCanvas.style.height = maxSize + "px";
+            modalCanvas.style.imageRendering = "auto";
+            
+            // Redraw the plot at higher resolution
+            drawPlotToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+        }
+    }
+
+    function closeModal() {
+        canvasModal.classList.remove("active");
+        expandedCanvasType = null;
+    }
+
+    // Click handlers for canvases
+    canvas.addEventListener("click", () => openModal("sim"));
+    livePlot.addEventListener("click", () => openModal("plot"));
+    
+    // Close modal on click
+    canvasModal.addEventListener("click", closeModal);
+    modalClose.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeModal();
+    });
+    
+    // Prevent closing when clicking on the canvas itself
+    modalCanvas.addEventListener("click", (e) => {
+        e.stopPropagation();
+    });
+
     render();
 }
 
@@ -346,6 +416,97 @@ let lastTime = performance.now();
 let lastSweepCount = 0;
 let sweepsHistory = [];
 let timeHistory = [];
+
+
+// Helper function to draw plot to any canvas context
+function drawPlotToCanvas(ctx, width, height) {
+    if (plotType === "no_plot" || plotHistory.length === 0) return;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Calculate margins based on canvas size
+    const leftMargin = width * 0.1;
+    const rightMargin = width * 0.025;
+    const topMargin = height * 0.05;
+    const bottomMargin = height * 0.05;
+    
+    // Axes
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Y axis
+    ctx.moveTo(leftMargin, topMargin);
+    ctx.lineTo(leftMargin, height - bottomMargin);
+    // X axis
+    ctx.moveTo(leftMargin, height - bottomMargin);
+    ctx.lineTo(width - rightMargin, height - bottomMargin);
+    ctx.stroke();
+    
+    // Y labels
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#fff";
+    ctx.font = `${Math.floor(height * 0.02)}px Arial`;
+    ctx.textAlign = "right";
+    let yMin, yMax;
+    if (plotType === "energy") {
+        yMin = -2 * Math.abs(j) - Math.abs(h);
+        yMax = 2 * Math.abs(j) + Math.abs(h);
+        ctx.fillText(yMin.toFixed(2), leftMargin - 5, height - bottomMargin);
+        ctx.fillText("0", leftMargin - 5, height / 2);
+        ctx.fillText(yMax.toFixed(2), leftMargin - 5, topMargin);
+    } else {
+        yMin = -1;
+        yMax = 1;
+        ctx.fillText("-1", leftMargin - 5, height - bottomMargin);
+        ctx.fillText("0", leftMargin - 5, height / 2);
+        ctx.fillText("1", leftMargin - 5, topMargin);
+    }
+    
+    // X label
+    ctx.textAlign = "center";
+    ctx.font = `${Math.floor(height * 0.025)}px Arial`;
+    ctx.fillText("Frame", width / 2, height - 5);
+    
+    // Y axis label
+    ctx.save();
+    ctx.translate(15, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.font = `${Math.floor(height * 0.025)}px Arial`;
+    if (plotType === "acceptance_ratio") {
+        ctx.fillText("Acceptance Ratio", 0, 0);
+    } else if (plotType === "magnetization") {
+        ctx.fillText("Magnetization", 0, 0);
+    } else if (plotType === "abs_magnetization") {
+        ctx.fillText("Absolute Magnetization", 0, 0);
+    } else if (plotType === "energy") {
+        ctx.fillText("Energy", 0, 0);
+    }
+    ctx.restore();
+    ctx.restore();
+    
+    // Plot line
+    ctx.beginPath();
+    ctx.strokeStyle = "#00ff00";
+    ctx.lineWidth = 3;
+    const plotLeft = leftMargin;
+    const plotRight = width - rightMargin;
+    const plotTop = topMargin;
+    const plotBottom = height - bottomMargin;
+    
+    for (let i = 0; i < plotHistory.length; i++) {
+        const x = plotLeft + ((plotRight - plotLeft) * i) / maxHistory;
+        let y = plotBottom - ((plotHistory[i] - yMin) / (yMax - yMin)) * (plotBottom - plotTop);
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+}
 
 function render() {
     // No scaling needed for square aspect ratio, use default transform
@@ -675,18 +836,46 @@ function render() {
         }
         livePlotCtx.stroke();
     }
+    
+    // Update modal if it's showing the plot
+    if (expandedCanvasType === "plot") {
+        drawPlotToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+    }
+    
+    // Update modal if it's showing the simulation
+    if (expandedCanvasType === "sim" && spins) {
+        if (vizMode === "color") {
+            // Copy color visualization to modal
+            const buf32 = new Uint32Array(imageData.data.buffer);
+            const modalImageData = modalCtx.createImageData(n, n);
+            const modalBuf32 = new Uint32Array(modalImageData.data.buffer);
+            for (let i = 0; i < n * n; i++) {
+                modalBuf32[i] = buf32[i];
+            }
+            modalCtx.putImageData(modalImageData, 0, 0);
+        } else if (vizMode === "quiver") {
+            // Redraw quiver visualization on modal
+            drawQuiverToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+        }
+    }
+    
     // Always continue animation
     animationId = requestAnimationFrame(render);
 }
 
 // Draw quiver plot (arrows) showing spin directions
 function drawQuiver() {
+    drawQuiverToCanvas(ctx, canvas.width, canvas.height);
+}
+
+// Helper function to draw quiver to any canvas context
+function drawQuiverToCanvas(context, width, height) {
     // Save current context state
-    ctx.save();
+    context.save();
     
     // Clear canvas with dark background
-    ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#111";
+    context.fillRect(0, 0, width, height);
     
     // Determine arrow spacing based on lattice size
     // For large lattices, we'll skip some sites to avoid clutter
@@ -697,15 +886,15 @@ function drawQuiver() {
         skip = 2;
     }
     
-    // Calculate grid for arrows (canvas is now 400x400 regardless of lattice size)
+    // Calculate grid for arrows
     const gridSize = Math.ceil(n / skip);
-    const cellSize = 400 / gridSize;
+    const cellSize = width / gridSize;
     const arrowLength = cellSize * 0.6; // Arrow length as fraction of cell size
     const headLength = arrowLength * 0.3; // Arrow head length
     
-    ctx.lineWidth = Math.max(1, cellSize / 20);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    context.lineWidth = Math.max(1, cellSize / 20);
+    context.lineCap = "round";
+    context.lineJoin = "round";
     
     for (let i = 0; i < n; i += skip) {
         for (let j = 0; j < n; j += skip) {
@@ -718,8 +907,8 @@ function drawQuiver() {
             const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
             
             // Set arrow color
-            ctx.strokeStyle = color;
-            ctx.fillStyle = color;
+            context.strokeStyle = color;
+            context.fillStyle = color;
             
             // Center position of arrow in canvas coordinates
             const cx = (j / skip + 0.5) * cellSize;
@@ -736,10 +925,10 @@ function drawQuiver() {
             const y2 = cy + (dy * arrowLength) / 2;
             
             // Draw arrow shaft
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
+            context.beginPath();
+            context.moveTo(x1, y1);
+            context.lineTo(x2, y2);
+            context.stroke();
             
             // Draw arrow head
             const angle = theta; // Use the same angle for arrow head
@@ -753,17 +942,17 @@ function drawQuiver() {
             const rightX = x2 - headLength * Math.cos(angle + headAngle);
             const rightY = y2 - headLength * Math.sin(angle + headAngle);
             
-            ctx.beginPath();
-            ctx.moveTo(x2, y2);
-            ctx.lineTo(leftX, leftY);
-            ctx.moveTo(x2, y2);
-            ctx.lineTo(rightX, rightY);
-            ctx.stroke();
+            context.beginPath();
+            context.moveTo(x2, y2);
+            context.lineTo(leftX, leftY);
+            context.moveTo(x2, y2);
+            context.lineTo(rightX, rightY);
+            context.stroke();
         }
     }
     
     // Restore context state
-    ctx.restore();
+    context.restore();
 }
 
 // Draw colorbar showing the HSV color mapping for spin angles
