@@ -86,9 +86,9 @@ body{
 
   .bottom{
     display:flex;
-    flex-direction:row;
+    flex-direction:column;
     justify-content:center;
-    align-items:flex-start;
+    align-items:center;
     gap:32px;
     width:100%;
     margin:48px auto 24px auto;
@@ -96,15 +96,11 @@ body{
 
   .about-col{
     flex:2;
-    min-width:300px;
+    max-width:900px;
+    width:100%;
     display:flex;
     flex-direction:column;
     gap:24px;
-  }
-
-  .todo-col{
-    flex:1;
-    min-width:220px;
   }
 
   .todo.panel{
@@ -148,11 +144,13 @@ canvas{
     box-shadow:var(--shadow);
     width:400px;
     height:400px;
+    aspect-ratio: 1 / 1;
   }
 
   .plot-canvas{
     width:400px;
     height:400px;
+    aspect-ratio: 1 / 1;
     background:#111;
     border:2px solid white;
     border-radius:12px;
@@ -369,8 +367,25 @@ canvas{
   }
 
   @media (max-width: 980px){
-    .stage{ flex-direction:column; gap:20px; }
-    .plot-canvas, .sim-canvas{ width:100%; max-width:420px; height:400px; }
+    .stage{ 
+      flex-direction:column; 
+      gap:20px; 
+      align-items:center;
+    }
+    .plot-canvas{ 
+      width:100%; 
+      max-width:420px; 
+      aspect-ratio: 1 / 1;
+    }
+    .sim-canvas{ 
+      width:100%; 
+      max-width:420px; 
+      aspect-ratio: 1 / 1;
+    }
+    .sim-column{
+      width:100%;
+      max-width:420px;
+    }
     .colorbar-container{ width:100%; max-width:420px; }
     .colorbar-canvas, .colorbar-labels{ width:100%; max-width:380px; }
   }
