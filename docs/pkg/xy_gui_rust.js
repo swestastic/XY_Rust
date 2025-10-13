@@ -90,6 +90,9 @@ export class XY {
     wolff_step() {
         wasm.xy_wolff_step(this.__wbg_ptr);
     }
+    swendsen_wang_step() {
+        wasm.xy_swendsen_wang_step(this.__wbg_ptr);
+    }
     /**
      * @returns {number}
      */

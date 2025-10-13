@@ -7,6 +7,7 @@ export const xy_metropolis_step: (a: number) => void;
 export const xy_overrelaxation_step: (a: number) => void;
 export const xy_metropolis_reflection_step: (a: number) => void;
 export const xy_wolff_step: (a: number) => void;
+export const xy_swendsen_wang_step: (a: number) => void;
 export const xy_accepted: (a: number) => number;
 export const xy_attempted: (a: number) => number;
 export const xy_energy: (a: number) => number;

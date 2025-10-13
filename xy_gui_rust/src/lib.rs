@@ -265,6 +265,108 @@ impl XY {
         self.magnetization = m;
     }
 
+    // Perform a Swendsen-Wang update for XY model
+    #[wasm_bindgen]
+    pub fn swendsen_wang_step(&mut self) {
+        let n = self.n;
+        
+        // Generate a random reflection angle phi between 0 and 2*pi
+        let phi = self.rng.gen_range(0.0..(2.0 * std::f64::consts::PI));
+        let two_phi = 2.0 * phi;
+        let pi = std::f64::consts::PI;
+        
+        // Precompute bond addition probability
+        // For each bond, add it to the cluster structure with probability based on alignment
+        let prob_factor = -2.0 * self.j / self.temp;
+        
+        // Build adjacency list for bonds to keep
+        // visited[i] will store the cluster ID (or 0 if not yet assigned)
+        let mut cluster_id = vec![0usize; n * n];
+        let mut next_cluster_id = 1usize;
+        
+        // Store original angles before any flips
+        let original_spins = self.spins.clone();
+        
+        // Process each site
+        for i in 0..n {
+            for j in 0..n {
+                let idx = i * n + j;
+                
+                if cluster_id[idx] == 0 {
+                    // Start a new cluster using flood fill
+                    let mut stack = Vec::new();
+                    stack.push((i, j));
+                    cluster_id[idx] = next_cluster_id;
+                    
+                    while let Some((ci, cj)) = stack.pop() {
+                        let c_idx = ci * n + cj;
+                        let theta_i = original_spins[c_idx];
+                        let cos_phi_i = (phi - theta_i).cos();
+                        
+                        // Check all neighbors
+                        let neighbors = [
+                            (ci, (cj + 1) % n),
+                            (ci, (cj + n - 1) % n),
+                            ((ci + 1) % n, cj),
+                            ((ci + n - 1) % n, cj),
+                        ];
+                        
+                        for (ni, nj) in neighbors {
+                            let n_idx = ni * n + nj;
+                            
+                            // Only process if neighbor not yet in any cluster
+                            if cluster_id[n_idx] == 0 {
+                                let theta_j = original_spins[n_idx];
+                                let cos_phi_j = (phi - theta_j).cos();
+                                
+                                // Calculate probability of adding bond
+                                let exponent = (prob_factor * cos_phi_i * cos_phi_j).min(0.0);
+                                let prob = 1.0 - exponent.exp();
+                                
+                                // Add bond (and neighbor to cluster) with this probability
+                                if self.rng.gen_range(0.0..1.0) < prob {
+                                    cluster_id[n_idx] = next_cluster_id;
+                                    stack.push((ni, nj));
+                                }
+                            }
+                        }
+                    }
+                    
+                    next_cluster_id += 1;
+                }
+            }
+        }
+        
+        // Now flip all clusters
+        // For each cluster, decide randomly whether to reflect or not
+        let mut flip_cluster = vec![false; next_cluster_id];
+        for c in 1..next_cluster_id {
+            flip_cluster[c] = self.rng.gen_range(0.0..1.0) < 0.5;
+        }
+        
+        // Apply reflections
+        for idx in 0..n * n {
+            let c = cluster_id[idx];
+            if c > 0 && flip_cluster[c] {
+                let theta = original_spins[idx];
+                self.spins[idx] = (pi - theta + two_phi).rem_euclid(2.0 * pi);
+            } else {
+                // Keep original spin if not flipping
+                self.spins[idx] = original_spins[idx];
+            }
+        }
+        
+        self.attempted += 1;
+        self.accepted += 1;
+        
+        // Recompute energy and magnetization
+        self.energy = calc_avg_energy(&self.spins, self.n, self.j, self.h);
+        let (mx, my, m) = calc_avg_magnetization(&self.spins, self.n);
+        self.mx = mx;
+        self.my = my;
+        self.magnetization = m;
+    }
+
     // Get accepted spins
     #[wasm_bindgen(getter)]
     pub fn accepted(&self) -> f64 {

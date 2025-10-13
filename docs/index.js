@@ -141,13 +141,13 @@ async function run() {
         xy.set_h(h);
         
         // Check if Wolff is selected and h is not zero
-        if (algorithm === "wolff" && h !== 0) {
-            alert("Wolff algorithm requires h = 0.\n\nResetting external field to 0.");
-            h = 0;
-            hValue.value = "0.00";
-            hSlider.value = "0";
-            xy.set_h(0);
-        }
+            if ((algorithm === "wolff" || algorithm === "swendsen-wang") && h !== 0) {
+                alert("This algorithm requires h = 0.\n\nResetting external field to 0.");
+                h = 0;
+                hValue.value = "0.00";
+                hSlider.value = "0";
+                xy.set_h(0);
+            }
     });
     hValue.addEventListener("change", () => {
         let val = parseFloat(hValue.value);
@@ -160,13 +160,13 @@ async function run() {
         xy.set_h(h);
         
         // Check if Wolff is selected and h is not zero
-        if (algorithm === "wolff" && h !== 0) {
-            alert("Wolff algorithm requires h = 0.\n\nResetting external field to 0.");
-            h = 0;
-            hValue.value = "0.00";
-            hSlider.value = "0";
-            xy.set_h(0);
-        }
+            if ((algorithm === "wolff" || algorithm === "swendsen-wang") && h !== 0) {
+                alert("This algorithm requires h = 0.\n\nResetting external field to 0.");
+                h = 0;
+                hValue.value = "0.00";
+                hSlider.value = "0";
+                xy.set_h(0);
+            }
     });
     wasm = await init();
 
@@ -223,13 +223,13 @@ async function run() {
         xy.set_j(j);
         
         // Check if Wolff is selected and J is negative
-        if (algorithm === "wolff" && j < 0) {
-            alert("Wolff algorithm requires J ≥ 0.\n\nThe antiferromagnetic case is not currently implemented.\n\nResetting to J = 1.0");
-            j = 1.0;
-            jValue.value = "1.00";
-            jSlider.value = "1.0";
-            xy.set_j(1.0);
-        }
+            if ((algorithm === "wolff" || algorithm === "swendsen-wang") && j < 0) {
+                alert("This algorithm requires J ≥ 0.\n\nThe antiferromagnetic case is not currently implemented.\n\nResetting to J = 1.0");
+                j = 1.0;
+                jValue.value = "1.00";
+                jSlider.value = "1.0";
+                xy.set_j(1.0);
+            }
     });
 
     jValue.addEventListener("change", () => {
@@ -243,13 +243,13 @@ async function run() {
         xy.set_j(j);
         
         // Check if Wolff is selected and J is negative
-        if (algorithm === "wolff" && j < 0) {
-            alert("Wolff algorithm requires J ≥ 0.\n\nThe antiferromagnetic case is not currently implemented.\n\nResetting to J = 1.0");
-            j = 1.0;
-            jValue.value = "1.00";
-            jSlider.value = "1.0";
-            xy.set_j(1.0);
-        }
+            if ((algorithm === "wolff" || algorithm === "swendsen-wang") && j < 0) {
+                alert("This algorithm requires J ≥ 0.\n\nThe antiferromagnetic case is not currently implemented.\n\nResetting to J = 1.0");
+                j = 1.0;
+                jValue.value = "1.00";
+                jSlider.value = "1.0";
+                xy.set_j(1.0);
+            }
     });
 
     // Dropdown for lattice size
@@ -269,24 +269,24 @@ async function run() {
         algorithm = algorithmDropdown.value;
         
         // Validate Wolff algorithm parameters
-        if (algorithm === "wolff") {
-            const jValue = parseFloat(document.getElementById("j-value").value);
-            const hValue = parseFloat(document.getElementById("h-value").value);
+            if (algorithm === "wolff" || algorithm === "swendsen-wang") {
+                const jValue = parseFloat(document.getElementById("j-value").value);
+                const hValue = parseFloat(document.getElementById("h-value").value);
             
-            if (jValue < 0 || hValue !== 0) {
-                alert("Wolff algorithm requires J ≥ 0 and h = 0.\n\nThe current implementation does not support antiferromagnetic coupling (J < 0) or external fields (h ≠ 0).\n\nResetting to J = 1.0 and h = 0.0");
+                if (jValue < 0 || hValue !== 0) {
+                    alert("This algorithm requires J ≥ 0 and h = 0.\n\nThe current implementation does not support antiferromagnetic coupling (J < 0) or external fields (h ≠ 0).\n\nResetting to J = 1.0 and h = 0.0");
                 
-                // Reset J to 1.0
-                document.getElementById("j-value").value = "1.0";
-                document.getElementById("j-slider").value = "1.0";
-                xy.set_j(1.0);
+                    // Reset J to 1.0
+                    document.getElementById("j-value").value = "1.0";
+                    document.getElementById("j-slider").value = "1.0";
+                    xy.set_j(1.0);
                 
-                // Reset h to 0.0
-                document.getElementById("h-value").value = "0.0";
-                document.getElementById("h-slider").value = "0.0";
-                xy.set_h(0.0);
+                    // Reset h to 0.0
+                    document.getElementById("h-value").value = "0.0";
+                    document.getElementById("h-slider").value = "0.0";
+                    xy.set_h(0.0);
+                }
             }
-        }
         
         if (animationId) {
             cancelAnimationFrame(animationId);
