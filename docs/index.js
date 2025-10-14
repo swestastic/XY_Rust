@@ -1,4 +1,16 @@
+// XY Model Monte Carlo Simulation - Main Entry Point
+// This file coordinates the simulation, UI, and rendering
+// Modular functionality is imported from ./modules/
+//   - colors.js: HSV/RGB conversion, colorbar, quiver rendering
+//   - modal.js: Modal popup handlers (currently inline due to local variable dependencies)
+//   - plotting.js: Plot rendering to canvas
+//   - sweeps.js: Algorithm step execution
+
 import init, { XY } from "./pkg/xy_gui_rust.js";
+import { hsvToRgb, drawColorbar, drawQuiverToCanvas, drawQuiver } from "./modules/colors.js";
+import { openModal, closeModal, setupModalHandlers } from "./modules/modal.js";
+import { drawPlotToCanvas } from "./modules/plotting.js";
+import { performAlgorithmStep } from "./modules/sweeps.js";
 
 let wasm;
 let xy;
@@ -403,7 +415,7 @@ async function run() {
                 modalCtx.putImageData(imageData, 0, 0);
             } else if (vizMode === "quiver") {
                 // Redraw quiver on modal canvas
-                drawQuiverToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+                drawQuiverToCanvas(modalCtx, modalCanvas.width, modalCanvas.height, n, spins);
             }
         } else if (canvasType === "plot") {
             // For plot canvas, use a larger resolution
@@ -414,7 +426,7 @@ async function run() {
             modalCanvas.style.imageRendering = "auto";
             
             // Redraw the plot at higher resolution
-            drawPlotToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+            drawPlotToCanvas(modalCtx, modalCanvas.width, modalCanvas.height, plotType, plotHistory, maxHistory, j, h);
         }
     }
 
@@ -475,95 +487,7 @@ let sweepsHistory = [];
 let timeHistory = [];
 
 
-// Helper function to draw plot to any canvas context
-function drawPlotToCanvas(ctx, width, height) {
-    if (plotType === "no_plot" || plotHistory.length === 0) return;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
-    
-    // Calculate margins based on canvas size
-    const leftMargin = width * 0.1;
-    const rightMargin = width * 0.025;
-    const topMargin = height * 0.05;
-    const bottomMargin = height * 0.05;
-    
-    // Axes
-    ctx.strokeStyle = "#aaa";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    // Y axis
-    ctx.moveTo(leftMargin, topMargin);
-    ctx.lineTo(leftMargin, height - bottomMargin);
-    // X axis
-    ctx.moveTo(leftMargin, height - bottomMargin);
-    ctx.lineTo(width - rightMargin, height - bottomMargin);
-    ctx.stroke();
-    
-    // Y labels
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = "#fff";
-    ctx.font = `${Math.floor(height * 0.02)}px Arial`;
-    ctx.textAlign = "right";
-    let yMin, yMax;
-    if (plotType === "energy") {
-        yMin = -2 * Math.abs(j) - Math.abs(h);
-        yMax = 2 * Math.abs(j) + Math.abs(h);
-        ctx.fillText(yMin.toFixed(2), leftMargin - 5, height - bottomMargin);
-        ctx.fillText("0", leftMargin - 5, height / 2);
-        ctx.fillText(yMax.toFixed(2), leftMargin - 5, topMargin);
-    } else {
-        yMin = -1;
-        yMax = 1;
-        ctx.fillText("-1", leftMargin - 5, height - bottomMargin);
-        ctx.fillText("0", leftMargin - 5, height / 2);
-        ctx.fillText("1", leftMargin - 5, topMargin);
-    }
-    
-    // X label
-    ctx.textAlign = "center";
-    ctx.font = `${Math.floor(height * 0.025)}px Arial`;
-    ctx.fillText("Frame", width / 2, height - 5);
-    
-    // Y axis label
-    ctx.save();
-    ctx.translate(15, height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = "center";
-    ctx.font = `${Math.floor(height * 0.025)}px Arial`;
-    if (plotType === "acceptance_ratio") {
-        ctx.fillText("Acceptance Ratio", 0, 0);
-    } else if (plotType === "magnetization") {
-        ctx.fillText("Magnetization", 0, 0);
-    } else if (plotType === "abs_magnetization") {
-        ctx.fillText("Absolute Magnetization", 0, 0);
-    } else if (plotType === "energy") {
-        ctx.fillText("Energy", 0, 0);
-    }
-    ctx.restore();
-    ctx.restore();
-    
-    // Plot line
-    ctx.beginPath();
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineWidth = 3;
-    const plotLeft = leftMargin;
-    const plotRight = width - rightMargin;
-    const plotTop = topMargin;
-    const plotBottom = height - bottomMargin;
-    
-    for (let i = 0; i < plotHistory.length; i++) {
-        const x = plotLeft + ((plotRight - plotLeft) * i) / maxHistory;
-        let y = plotBottom - ((plotHistory[i] - yMin) / (yMax - yMin)) * (plotBottom - plotTop);
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-    }
-    ctx.stroke();
-}
+// Helper function to draw plot to any canvas context - now imported from modules/plotting.js
 
 function render() {
     // No scaling needed for square aspect ratio, use default transform
@@ -596,21 +520,7 @@ function render() {
                 // Run warmup sweeps
                 let batch = Math.min(sweepState.batchSize, sweepState.nWarmup - sweepState.warmupCount);
                 for (let s = 0; s < batch; s++) {
-                    if (algorithm === "metropolis") {
-                        xy.metropolis_step();
-                    } else if (algorithm === "wolff") {
-                        xy.wolff_step();
-                    } else if (algorithm === "swendsen-wang") {
-                        xy.swendsen_wang_step();
-                    } else if (algorithm === "heat-bath") {
-                        xy.heatbath_step();
-                    } else if (algorithm === "glauber") {
-                        xy.glauber_step();
-                    } else if (algorithm === "overrelaxation") {
-                        xy.overrelaxation_step();
-                    } else if (algorithm === "metropolis-reflection") {
-                        xy.metropolis_reflection_step();
-                    }
+                    performAlgorithmStep(xy, algorithm);
                 }
                 sweepsThisFrame += batch;
                 sweepState.warmupCount += batch;
@@ -622,23 +532,7 @@ function render() {
                 // Run decorrelation sweeps
                 let batch = Math.min(sweepState.batchSize, sweepState.nDecor - sweepState.decorCount);
                 for (let s = 0; s < batch; s++) {
-                    if (algorithm === "metropolis") {
-                        xy.metropolis_step();
-                    } else if (algorithm === "wolff") {
-                        xy.wolff_step();
-                    } else if (algorithm === "swendsen-wang") {
-                        xy.swendsen_wang_step();
-                    } else if (algorithm === "heat-bath") {
-                        xy.heatbath_step();
-                    } else if (algorithm === "glauber") {
-                        xy.glauber_step();
-                    } else if (algorithm === "kawasaki") {
-                        xy.kawasaki_step();
-                    } else if (algorithm === "overrelaxation") {
-                        xy.overrelaxation_step();
-                    } else if (algorithm === "metropolis-reflection") {
-                        xy.metropolis_reflection_step();
-                    }
+                    performAlgorithmStep(xy, algorithm);
                 }
                 sweepsThisFrame += batch;
                 sweepState.decorCount += batch;
@@ -650,23 +544,7 @@ function render() {
                 // Run measurement sweeps
                 let batch = Math.min(sweepState.batchSize, sweepState.nSweeps - sweepState.sweepCount);
                 for (let s = 0; s < batch; s++) {
-                    if (algorithm === "metropolis") {
-                        xy.metropolis_step();
-                    } else if (algorithm === "wolff") {
-                        xy.wolff_step();
-                    } else if (algorithm === "swendsen-wang") {
-                        xy.swendsen_wang_step();
-                    } else if (algorithm === "heat-bath") {
-                        xy.heatbath_step();
-                    } else if (algorithm === "glauber") {
-                        xy.glauber_step();
-                    } else if (algorithm === "kawasaki") {
-                        xy.kawasaki_step();
-                    } else if (algorithm === "overrelaxation") {
-                        xy.overrelaxation_step();
-                    } else if (algorithm === "metropolis-reflection") {
-                        xy.metropolis_reflection_step();
-                    }
+                    performAlgorithmStep(xy, algorithm);
                     // Store measurement values for binning
                     const idx = sweepState.tIndex;
                     sweepState.binData[idx].energy.push(xy.energy);
@@ -729,23 +607,7 @@ function render() {
         }
     } else {
         for (let sweep = 0; sweep < sweepsPerFrame; sweep++) {
-            if (algorithm === "metropolis") {
-                xy.metropolis_step();
-            } else if (algorithm === "wolff") {
-                xy.wolff_step();
-            } else if (algorithm === "swendsen-wang") {
-                xy.swendsen_wang_step();
-            } else if (algorithm === "heat-bath") {
-                xy.heatbath_step();
-            } else if (algorithm === "glauber") {
-                xy.glauber_step();
-            } else if (algorithm === "kawasaki") {
-                xy.kawasaki_step();
-            } else if (algorithm === "overrelaxation") {
-                xy.overrelaxation_step();
-            } else if (algorithm === "metropolis-reflection") {
-                        xy.metropolis_reflection_step();
-            }
+            performAlgorithmStep(xy, algorithm);
         }
         sweepsThisFrame += sweepsPerFrame;
     }
@@ -790,7 +652,7 @@ function render() {
         ctx.putImageData(imageData, 0, 0);
     } else {
         // Quiver/arrow visualization
-        drawQuiver();
+        drawQuiver(ctx, canvas, n, spins);
     }
 
     // Update plot value and history
@@ -894,7 +756,7 @@ function render() {
     
     // Update modal if it's showing the plot
     if (expandedCanvasType === "plot") {
-        drawPlotToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+        drawPlotToCanvas(modalCtx, modalCanvas.width, modalCanvas.height, plotType, plotHistory, maxHistory, j, h);
     }
     
     // Update modal if it's showing the simulation
@@ -910,153 +772,12 @@ function render() {
             modalCtx.putImageData(modalImageData, 0, 0);
         } else if (vizMode === "quiver") {
             // Redraw quiver visualization on modal
-            drawQuiverToCanvas(modalCtx, modalCanvas.width, modalCanvas.height);
+            drawQuiverToCanvas(modalCtx, modalCanvas.width, modalCanvas.height, n, spins);
         }
     }
     
     // Always continue animation
     animationId = requestAnimationFrame(render);
-}
-
-// Draw quiver plot (arrows) showing spin directions
-function drawQuiver() {
-    drawQuiverToCanvas(ctx, canvas.width, canvas.height);
-}
-
-// Helper function to draw quiver to any canvas context
-function drawQuiverToCanvas(context, width, height) {
-    // Save current context state
-    context.save();
-    
-    // Clear canvas with dark background
-    context.fillStyle = "#111";
-    context.fillRect(0, 0, width, height);
-    
-    // Determine arrow spacing based on lattice size
-    // For large lattices, we'll skip some sites to avoid clutter
-    let skip = 1;
-    if (n > 128) {
-        skip = 4;
-    } else if (n > 64) {
-        skip = 2;
-    }
-    
-    // Calculate grid for arrows
-    const gridSize = Math.ceil(n / skip);
-    const cellSize = width / gridSize;
-    const arrowLength = cellSize * 0.6; // Arrow length as fraction of cell size
-    const headLength = arrowLength * 0.3; // Arrow head length
-    
-    context.lineWidth = Math.max(1, cellSize / 20);
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    
-    for (let i = 0; i < n; i += skip) {
-        for (let j = 0; j < n; j += skip) {
-            const idx = i * n + j;
-            const theta = spins[idx];
-            
-            // Map angle to color using HSV (same as color mode)
-            const hue = ((theta % (2 * Math.PI)) / (2 * Math.PI)) * 360;
-            const rgb = hsvToRgb(hue, 1, 1);
-            const color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-            
-            // Set arrow color
-            context.strokeStyle = color;
-            context.fillStyle = color;
-            
-            // Center position of arrow in canvas coordinates
-            const cx = (j / skip + 0.5) * cellSize;
-            const cy = (i / skip + 0.5) * cellSize;
-            
-            // Arrow direction components
-            const dx = Math.cos(theta);
-            const dy = Math.sin(theta);
-            
-            // Start and end points of arrow shaft
-            const x1 = cx - (dx * arrowLength) / 2;
-            const y1 = cy - (dy * arrowLength) / 2;
-            const x2 = cx + (dx * arrowLength) / 2;
-            const y2 = cy + (dy * arrowLength) / 2;
-            
-            // Draw arrow shaft
-            context.beginPath();
-            context.moveTo(x1, y1);
-            context.lineTo(x2, y2);
-            context.stroke();
-            
-            // Draw arrow head
-            const angle = theta; // Use the same angle for arrow head
-            const headAngle = Math.PI / 6; // 30 degrees
-            
-            // Left side of arrow head
-            const leftX = x2 - headLength * Math.cos(angle - headAngle);
-            const leftY = y2 - headLength * Math.sin(angle - headAngle);
-            
-            // Right side of arrow head
-            const rightX = x2 - headLength * Math.cos(angle + headAngle);
-            const rightY = y2 - headLength * Math.sin(angle + headAngle);
-            
-            context.beginPath();
-            context.moveTo(x2, y2);
-            context.lineTo(leftX, leftY);
-            context.moveTo(x2, y2);
-            context.lineTo(rightX, rightY);
-            context.stroke();
-        }
-    }
-    
-    // Restore context state
-    context.restore();
-}
-
-// Draw colorbar showing the HSV color mapping for spin angles
-function drawColorbar(canvas, ctx) {
-    canvas.width = 360;
-    canvas.height = 20;
-    
-    const imageData = ctx.createImageData(canvas.width, canvas.height);
-    const buf32 = new Uint32Array(imageData.data.buffer);
-    
-    for (let x = 0; x < canvas.width; x++) {
-        // Map x position to angle [0, 2π]
-        const theta = (x / canvas.width) * 2 * Math.PI;
-        // Map angle to hue [0, 360)
-        const hue = (theta / (2 * Math.PI)) * 360;
-        // Full saturation and value
-        const rgb = hsvToRgb(hue, 1, 1);
-        // Pack into uint32: 0xffRRGGBB
-        const color = (0xff << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
-        
-        // Fill the entire height for this x position
-        for (let y = 0; y < canvas.height; y++) {
-            buf32[y * canvas.width + x] = color;
-        }
-    }
-    
-    ctx.putImageData(imageData, 0, 0);
-}
-
-// HSV to RGB conversion helper (needed for colorbar)
-function hsvToRgb(h, s, v) {
-    let c = v * s;
-    let x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    let m = v - c;
-    let r, g, b;
-    if (h < 60) {
-        r = c; g = x; b = 0;
-    } else if (h < 120) {
-        r = x; g = c; b = 0;
-    } else if (h < 180) {
-        r = 0; g = c; b = x;
-    } else if (h < 240) {
-        r = 0; g = x; b = c;
-    } else if (h < 300) {
-        r = x; g = 0; b = c;
-    } else {
-        r = c; g = 0; b = x;
-    }
-    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
 }
 
 run();
